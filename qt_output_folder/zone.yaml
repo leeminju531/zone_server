@@ -1,3 +1,2 @@
-yaml : ./map.yaml
-zone Image : ./zone_pgm
-
+yaml : ./map.yaml # specific original yaml path
+zone folder : ./zone_pgm_folder  # specific zone folder 
