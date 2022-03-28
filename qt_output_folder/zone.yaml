@@ -1,0 +1,3 @@
+yaml : ./map.yaml
+zone Image : ./zone_pgm
+
