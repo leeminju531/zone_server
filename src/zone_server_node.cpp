@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <fstream>
 #include <boost/filesystem.hpp>
+#include <unordered_map>
 
 #include "ros/ros.h"
 #include "ros/console.h"
@@ -65,7 +66,6 @@ public:
       exit(-1);
     }
   }
-  
 
   MapMode mode = TRINARY;
   double res;
@@ -188,8 +188,12 @@ public:
     ros::NodeHandle private_nh("~");
     private_nh.param("frame_id", frame_id_, std::string("map"));
     for(int i=0;i<zmInfo_.img_cnt_;i++){
+      //name_idx_hash[zmInfo_.zone_topic_name_[i]] = i;
+      
       v_map_pub_.emplace_back(nh_.advertise<nav_msgs::OccupancyGrid>(zmInfo_.zone_topic_name_[i], 1, true));
       v_metadata_pub_.emplace_back(nh_.advertise<nav_msgs::MapMetaData>( zmInfo_.zone_topic_name_[i] + "_metadata", 1, true));
+      
+      //get_map_service_.emplace_back(nh_.advertiseService("static_" + zmInfo_.zone_topic_name_[i] , &ZoneMapServer::mapCallback, this));
       //When called this service returns a copy of the current map
       //get_map_service_ .emplace_back(nh_.advertiseService("static_" + zmInfo_.zone_topic_name_[i], &MapServer::mapCallback, this));
       if(!loadMapFromValues(zmInfo_.zone_img_path_[i],zmInfo_.res,zmInfo_.negate,zmInfo_.occ_th,zmInfo_.free_th,zmInfo_.origin,zmInfo_.mode,i))
@@ -198,20 +202,24 @@ public:
       }
     }
   }
+
 private:
   MapInfo zmInfo_;
   ros::NodeHandle nh_;
   std::vector<ros::Publisher> v_map_pub_;
   std::vector<ros::Publisher> v_metadata_pub_;
-  std::vector<ros::ServiceServer> get_map_service_;
-  std::vector<ros::ServiceServer> change_map_srv_;
-  std::string frame_id_;
-  
-  /** The map data is cached here, to be sent out to service callers
-     */
-  nav_msgs::MapMetaData meta_data_message_;
-  nav_msgs::GetMap::Response map_resp_;
 
+  // std::vector<ros::ServiceServer> get_map_service_;
+  // std::unordered_map<std::string,int> name_idx_hash; // only used static service call 
+  // std::string called_name;
+
+
+  std::string frame_id_;
+  std::vector<nav_msgs::MapMetaData> v_meta_data_message_;
+  std::vector<nav_msgs::GetMap::Response> v_map_resp_;
+
+  
+ 
   /** Callback invoked when someone requests our service */
   // bool mapCallback(nav_msgs::GetMap::Request  &req,
   //                   nav_msgs::GetMap::Response &res )
@@ -219,16 +227,17 @@ private:
   //   // request is empty; we ignore it
 
   //   // = operator is overloaded to make deep copy (tricky!)
-  //   res = map_resp_;
-  //   ROS_INFO("Sending map");
+  //   res = v_map_resp_[name_idx_hash[called_name]];
+  //   ROS_INFO("Sending %s",called_name.c_str());
 
   //   return true;
   // }
-
   bool loadMapFromValues(std::string map_file_name, double resolution,
                            int negate, double occ_th, double free_th,
                            double origin[3], MapMode mode,int idx)
   {
+    nav_msgs::MapMetaData meta_data_message_;
+    nav_msgs::GetMap::Response map_resp_;
     try {
       map_server::loadMapFromFile(&map_resp_, map_file_name.c_str(),
                                   resolution, negate, occ_th, free_th,
@@ -252,8 +261,9 @@ private:
     //Publish latched topics
     v_metadata_pub_[idx].publish( meta_data_message_ );
     v_map_pub_[idx].publish( map_resp_.map );
+    v_meta_data_message_.emplace_back(meta_data_message_);
+    v_map_resp_.emplace_back(map_resp_);
 
-    
     return true;
   }
 };
