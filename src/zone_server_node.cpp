@@ -64,6 +64,7 @@ public:
       ROS_WARN("Zone Map Server Only Support Loading From Yaml Format");
       exit(-1);
     }
+
   }
 
 private:
@@ -73,7 +74,8 @@ private:
   double occ_th;
   double free_th;
   double origin[3];
-  
+  std::vector<std::string> zone_topic_name_;
+  std::vector<std::string> zone_img_path_;
   
   bool loadMapFromYaml(std::string path_to_yaml){
     std::ifstream fin(path_to_yaml.c_str());
@@ -140,18 +142,59 @@ private:
       ROS_ERROR("The map does not contain an origin tag or it is invalid.");
       return false;
     }
+    try{
+      std::string mapfname;
+      doc["zone_img_path"] >> mapfname;
+      if(mapfname.size() == 0){
+        ROS_ERROR("The zone_img_path tag cannot be an empty string.");
+        return false;
+      }
+      boost::filesystem::path mapfpath(mapfname);
+      if (!mapfpath.is_absolute()){
+        boost::filesystem::path dir(path_to_yaml);
+        dir = dir.parent_path();
+        mapfpath = dir / mapfpath;
+        mapfname = mapfpath.string();
+      }
+      for(auto const& dir_entry : boost::filesystem::directory_iterator{mapfpath}){
+        std::cout << dir_entry << std::endl;
+        zone_img_path_.emplace_back(dir_entry.path().string());
+      }
+
+      // extract topic name 
+      for(const std::string& img_path : zone_img_path_){
+        size_t s,e;
+        s=e=0;
+        for(int i=img_path.size()-1;i>=0;i--){
+          if(img_path[i] == '.')  e = i;
+          else if(img_path[i] == '/')  s = i;
+
+          if(s>0 && e>0)  break;
+        }
+        zone_topic_name_.emplace_back(img_path.substr(s+1,e-s-1));
+      }
+      // for(int i=0;i<zone_topic_name_.size();i++){
+      //   std::cout << "topic name : "<<zone_topic_name_[i] << std::endl;
+      //   std::cout << "img path : "<<zone_img_path_[i] << std::endl;
+      // }
+
+    }catch (YAML::InvalidScalar &) {
+      ROS_ERROR("The map does not contain an image tag or it is invalid.");
+      return false;
+    }
+
      
     return true;
   }
-};
 
 
   
+};
 
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "zone_map_server", ros::init_options::AnonymousName);
+  ros::init(argc, argv, "zone_map_sever", ros::init_options::AnonymousName);
   ros::NodeHandle nh("~");
   
   std::string fname(argv[1]); // argv[1] : yaml path -> fname store yaml path
@@ -159,8 +202,9 @@ int main(int argc, char **argv)
   try
   {
     MapInfo mInfo(fname); // read yaml file info
-    //ZoneMapServer zms(mInfo,zname, 0.0);
-    //ros::spin();
+    
+
+
   }
   catch(std::runtime_error& e)
   {
