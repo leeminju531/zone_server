@@ -127,7 +127,7 @@ private:
       for(int i=0;i<zone_img_path_.size();i++)
       {
         ROS_INFO("Zone Pgm : %s",zone_img_path_[i].c_str());
-        ROS_INFO("assigned Topic Name : %s",zone_topic_name_[i].c_str());
+        ROS_INFO("Assigned Topic Name : %s",zone_topic_name_[i].c_str());
         v_zone_map_pub_.emplace_back(nh_.advertise<nav_msgs::OccupancyGrid>(zone_topic_name_[i],1,true));
         v_zone_meta_pub_.emplace_back(nh_.advertise<nav_msgs::MapMetaData>(zone_topic_name_[i]+"_metadata",1,true));
         if(!loadMapFromValues(zone_img_path_[i],resolution_,origin_))
@@ -166,6 +166,17 @@ private:
               map_resp_.map.info.width,
               map_resp_.map.info.height,
               map_resp_.map.info.resolution);
+      
+
+      // for visualization, specify value 
+      for(int i=0;i<width_*height_;i++){
+        if(map_resp_.map.data[i] == -1) // unknown
+          map_resp_.map.data[i] = 0;
+        else if(map_resp_.map.data[i] == 0) // free 
+          map_resp_.map.data[i] = 99;
+        else // occupied
+          map_resp_.map.data[i] = 100;
+      }
 
       //Publish latched topics
       v_zone_map_pub_.back().publish(map_resp_.map);
