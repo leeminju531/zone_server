@@ -1,0 +1,8 @@
+<launch>
+
+    <node name="zone_server" pkg="zone_server" type="zone_server" output="screen">
+        <param name="base_frame_id" value="baseLink@#"/>
+        <param name="zone_folder_path" value="/home/minju/catkin_ws/src/zone_server/QT/zone_pgm_folder" />
+    </node>
+
+</launch>
