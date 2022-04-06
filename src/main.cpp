@@ -27,7 +27,15 @@ void operator >> (const YAML::Node& node, T& i)
   i = node.as<T>();
 }
 #endif
-
+// enum Color {
+//   COLOR_A = 10,
+//   COLOR_B = 50,
+//   COLOR_C = 90,
+//   COLOR_D = 110,
+//   COLOR_E = 140,
+//   COLOR_F = 180,
+// };
+// int color[6] = {COLOR_A,COLOR_B,COLOR_C,COLOR_D,COLOR_E,COLOR_F}
 class RobotZoneServer{
 public:
     RobotZoneServer():
@@ -37,18 +45,19 @@ public:
         private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
         private_nh_.param("base_frame_id", base_frame_id_, std::string("base_footprint"));
         private_nh_.param("zone_folder_path",zone_folder_path_,std::string(""));
+        private_nh_.param("pub_each_map",each_pub_,bool(false));
         
         
         robot_zone_pub_ = nh_.advertise<std_msgs::String> ("robot_zone",1);
         map_metadata_sub_ = nh_.subscribe(map_metadata_,1,&RobotZoneServer::map_callback,this);
-        
+        zone_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("zone_metadata",1,true);
+        zone_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("zone_cost_map",1,true);
     }
     
 private:
     ros::NodeHandle private_nh_;
     ros::NodeHandle nh_;
     
-
     string map_metadata_;
     ros::Subscriber map_metadata_sub_;
     double origin_[3];
@@ -59,6 +68,7 @@ private:
     string global_frame_id_;
     string base_frame_id_;
     string zone_folder_path_;
+    bool each_pub_;
     
     std::vector<std::string> zone_topic_name_;
     std::vector<std::string> zone_img_path_;
@@ -67,6 +77,11 @@ private:
     std::vector<nav_msgs::GetMap::Response> v_zone_map_resp_;
     std::vector<ros::Publisher> v_zone_map_pub_;
     
+    
+    nav_msgs::MapMetaData meta_data_message_;
+    ros::Publisher zone_meta_pub_;
+    nav_msgs::GetMap::Response zone_map_resp_;
+    ros::Publisher zone_map_pub_;
 
     ros::Publisher robot_zone_pub_;
 
@@ -90,7 +105,24 @@ private:
         ROS_INFO("Heard Map MetaData ! ");
         
         loadZoneMap(zone_folder_path_,origin_,resolution_);
+        
+        combineMap(meta_data_message_,zone_map_resp_,v_zone_map_resp_); // make one costmap and publish for visualization
     }
+
+    void combineMap(nav_msgs::MapMetaData& meta_data_message,nav_msgs::GetMap::Response& zone_map_resp,const std::vector<nav_msgs::GetMap::Response>& v_zone_map_resp_)
+    {
+      zone_map_resp = v_zone_map_resp_.front();
+      //meta_data_message = v_zone_map_resp_.front().map.info();
+      for(auto& map_resp : v_zone_map_resp_)
+        for(int i=0;i<width_*height_;i++)
+          zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
+      
+      //zone_meta_pub_.publish(meta_data_message);
+      zone_map_pub_.publish(zone_map_resp);
+      
+    }
+
+
     void loadZoneMap(std::string z_path,double* origin,double resolution)
     {
       if(zone_folder_path_.empty())
@@ -128,8 +160,11 @@ private:
       {
         ROS_INFO("Zone Pgm : %s",zone_img_path_[i].c_str());
         ROS_INFO("Assigned Topic Name : %s",zone_topic_name_[i].c_str());
-        v_zone_map_pub_.emplace_back(nh_.advertise<nav_msgs::OccupancyGrid>(zone_topic_name_[i],1,true));
-        v_zone_meta_pub_.emplace_back(nh_.advertise<nav_msgs::MapMetaData>(zone_topic_name_[i]+"_metadata",1,true));
+        if(each_pub_) //Publish latched topics
+        {
+          v_zone_map_pub_.emplace_back(nh_.advertise<nav_msgs::OccupancyGrid>(zone_topic_name_[i],1,true));
+          v_zone_meta_pub_.emplace_back(nh_.advertise<nav_msgs::MapMetaData>(zone_topic_name_[i]+"_metadata",1,true));
+        }
         if(!loadMapFromValues(zone_img_path_[i],resolution_,origin_))
         {
           exit(-1);
@@ -172,15 +207,18 @@ private:
       for(int i=0;i<width_*height_;i++){
         if(map_resp_.map.data[i] == -1) // unknown
           map_resp_.map.data[i] = 0;
-        else if(map_resp_.map.data[i] == 0) // free 
-          map_resp_.map.data[i] = 99;
+        // else if(map_resp_.map.data[i] == 0) // free 
+        //   map_resp_.map.data[i] = 99;
         else // occupied
-          map_resp_.map.data[i] = 100;
+          map_resp_.map.data[i] = 99;
       }
 
-      //Publish latched topics
-      v_zone_map_pub_.back().publish(map_resp_.map);
-      v_zone_meta_pub_.back().publish(meta_data_message_);
+
+      if(each_pub_) // Publish each latched topics
+      {
+        v_zone_map_pub_.back().publish(map_resp_.map);
+        v_zone_meta_pub_.back().publish(meta_data_message_);
+      }
       v_meta_data_message_.emplace_back(meta_data_message_);
       v_zone_map_resp_.emplace_back(map_resp_);
 
