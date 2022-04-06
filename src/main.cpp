@@ -16,6 +16,8 @@
 #include <tf/tf.h>
 
 #include <string>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
 using namespace std;
 
 #ifdef HAVE_YAMLCPP_GT_0_5_0
@@ -52,12 +54,32 @@ public:
         map_metadata_sub_ = nh_.subscribe(map_metadata_,1,&RobotZoneServer::map_callback,this);
         zone_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("zone_metadata",1,true);
         zone_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("zone_cost_map",1,true);
+        boost::thread(&RobotZoneServer::WorkerThread);
+        
     }
-    
+    ~RobotZoneServer()
+    {
+      zone_thr_.join();
+    }
 private:
     ros::NodeHandle private_nh_;
     ros::NodeHandle nh_;
     
+    static void WorkerThread()
+    {
+      ros::Rate rate(10.0);
+      while(ros::ok())
+      {
+        ROS_INFO("Heard Map MetaData ! ");
+        rate.sleep();
+        
+
+
+      }
+        
+    };
+    boost::thread zone_thr_;
+
     string map_metadata_;
     ros::Subscriber map_metadata_sub_;
     double origin_[3];
@@ -214,7 +236,7 @@ private:
       }
 
 
-      if(each_pub_) // Publish each latched topics
+      if(each_pub_) // Publish each map latched topics
       {
         v_zone_map_pub_.back().publish(map_resp_.map);
         v_zone_meta_pub_.back().publish(meta_data_message_);
