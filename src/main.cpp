@@ -14,6 +14,7 @@
 #include "yaml-cpp/yaml.h"
 #include <iostream>
 #include <tf/tf.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <string>
 #include <boost/thread/thread.hpp>
@@ -42,39 +43,74 @@ class RobotZoneServer{
 public:
     RobotZoneServer():
         private_nh_("~")
+        
     {
         private_nh_.param("map_metadata", map_metadata_, std::string("map_metadata"));
         private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
         private_nh_.param("base_frame_id", base_frame_id_, std::string("base_footprint"));
         private_nh_.param("zone_folder_path",zone_folder_path_,std::string(""));
-        private_nh_.param("pub_each_map",each_pub_,bool(false));
+        private_nh_.param("pub_each_map",each_pub_,bool(true));
         
         
         robot_zone_pub_ = nh_.advertise<std_msgs::String> ("robot_zone",1);
         map_metadata_sub_ = nh_.subscribe(map_metadata_,1,&RobotZoneServer::map_callback,this);
         zone_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("zone_metadata",1,true);
         zone_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("zone_cost_map",1,true);
-        boost::thread(&RobotZoneServer::WorkerThread);
+        boost::thread(boost::bind(&RobotZoneServer::WorkerThread,this));
         
+        // robotZonePublish();
     }
     ~RobotZoneServer()
     {
+      
       zone_thr_.join();
     }
 private:
     ros::NodeHandle private_nh_;
     ros::NodeHandle nh_;
     
-    static void WorkerThread()
+    
+    void WorkerThread()
     {
       ros::Rate rate(10.0);
+      tf2_ros::Buffer tfBuffer;
+      tf2_ros::TransformListener tfListener(tfBuffer);
+      geometry_msgs::TransformStamped transformStamped;
       while(ros::ok())
       {
-        ROS_INFO("Heard Map MetaData ! ");
-        rate.sleep();
+        // try{
+        //   transformStamped = tfBuffer.lookupTransform(global_frame_id_, base_frame_id_, 
+ 				// 									ros::Time(0),ros::Duration(0.1));
+        // }catch(tf2::TransformException &ex){
+        //   ROS_WARN("%s",ex.what());
+        //   continue;
+        // }
+        std::cout <<"1" << std::endl;
+        // ROS_INFO("Heard Map MetaData ! ");
+        for(int i=0;i<v_zone_map_resp_.size();i++)
+        {
+          double x=5,y=5; // arr 좌표 위 로봇의 좌표. 이를 구해야함.
+         
+          // if (v_zone_map_resp_[i].map.data[(int) 1/resolution_ * (x + width_ * y) ] > 0 ) // occupied area
+          {
+            std::cout <<"2" << std::endl;
+            std::cout <<"(int) 1/resolution_ * (x + width_ * y) : " << (int) 1/resolution_ * (x + width_ * y)<<std::endl;
+            v_zone_map_resp_[i].map.data[(int) 1/resolution_ * (x + width_ * y) ] = 120;
+            std::cout <<"3" << std::endl;
+            std::cout <<"v_zone_map_resp_.size : " << v_zone_map_resp_.size() << std::endl;
+            std::cout <<"v_zone_map_pub_.size :  " << v_zone_map_pub_.size() <<  std::endl;
+            v_zone_map_pub_[i].publish(v_zone_map_resp_[i].map);
+            std::cout <<"zone_topic_name_[i] :  " << zone_topic_name_[i] <<  std::endl;
+            std::cout <<"4" << std::endl;
+            // std_msgs::String msg;
+            // msg.data = zone_topic_name_[i];
+            // robot_zone_pub_.publish(msg);
+            break;
+          }
+        }
         
-
-
+        
+        rate.sleep();
       }
         
     };
@@ -121,7 +157,7 @@ private:
         origin_[2] = yaw;
 
         resolution_ = msg->resolution;
-        width_ = msg->width; // width , heigh 도 필요할까 ?
+        width_ = msg->width; 
         height_ = msg->height;
         
         ROS_INFO("Heard Map MetaData ! ");
