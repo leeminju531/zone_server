@@ -44,7 +44,15 @@ void operator >> (const YAML::Node& node, T& i)
   i = node.as<T>();
 }
 #endif
-
+// enum Color {
+//   COLOR_A = 10,
+//   COLOR_B = 50,
+//   COLOR_C = 90,
+//   COLOR_D = 110,
+//   COLOR_E = 140,
+//   COLOR_F = 180,
+// };
+// int color[6] = {COLOR_A,COLOR_B,COLOR_C,COLOR_D,COLOR_E,COLOR_F}
 class RobotZoneServer{
 public:
     RobotZoneServer():
@@ -193,19 +201,41 @@ private:
 
         for(int i=0;i<v_zone_map_resp_.size();i++)
         {
-          // scaling and transform to 1-D  
-          // int idx = 1/resolution_ * (x + width_ * y); 
-          int x_idx = 1/resolution_ * x;
-          int y_idx = 1/resolution_ * width_ * y;
-          y_idx = y_idx % width_; // this's So Crucial !!!! 
-          int idx = x_idx + y_idx;
-          if (idx >= 0 && idx < width_*height_ && v_zone_map_resp_[i].map.data[idx]] > 0 ) // occupied area
+          int idx = 1/resolution_ * (x + width_ * y); // scaling and transform to 1-D  
+          // if (idx >= 0 && idx < width_*height_ && v_zone_map_resp_[i].map.data[idx] > 0 ) // occupied area
+          // {
+          //   std_msgs::String msg;
+          //   msg.data = zone_topic_name_[i];
+          //   robot_zone_pub_.publish(msg);
+          //   pub_=true;
+          //   // std::cout <<" pubed " << std::endl;
+          //   break;
+          // }
+          int a1 = 1/resolution_ * width_ * y;
+          int x1 = 1/resolution_ * x;
+          if (idx >= 0 && idx < width_*height_ ) // occupied area
           {
-            std_msgs::String msg;
-            msg.data = zone_topic_name_[i];
-            robot_zone_pub_.publish(msg);
-            pub_=true;
-            break;
+            //v_zone_map_resp_[i].map.data[idx];
+            std::cout << "resolution  : "<<resolution_ << std::endl;
+            std::cout << "zone_topic_name_["<<i<<"] : "<<zone_topic_name_[i] << std::endl;
+            std::cout << "v_zone_map_resp_["<<i<<"].map.data[idx] : "<<(int)v_zone_map_resp_[i].map.data[idx] <<std::endl;
+            std::cout << "v_zone_map_data_message["<<i<<"].data[idx] : "<<(int)v_zone_map_data_message[i].data[idx] <<std::endl;
+            if(v_zone_map_resp_[i].map.data[a1 - a1%width_+x1])
+            {
+              std::cout << "ddddddd in area : " << zone_topic_name_[i] << std::endl;
+              
+              std_msgs::String msg;
+              msg.data = zone_topic_name_[i];
+              robot_zone_pub_.publish(msg);
+              pub_=true;
+            }
+            //v_zone_map_resp_[i].map.data[idx] = 120;
+            
+            
+            
+
+            // std::cout <<" pubed " << std::endl;
+            
           }
         }
         if(!pub_)
@@ -214,6 +244,7 @@ private:
           msg.data = "None";
           robot_zone_pub_.publish(msg);
         }
+       
         rate.sleep();
       }
         
@@ -276,25 +307,31 @@ private:
     void combineMap(nav_msgs::MapMetaData& meta_data_message,nav_msgs::GetMap::Response& zone_map_resp,const std::vector<nav_msgs::GetMap::Response>& v_zone_map_resp_)
     {
       zone_map_resp = v_zone_map_resp_.front();
-      meta_data_message = v_zone_map_resp_.front().map.info();
-      for(auto& map_resp : v_zone_map_resp_)
-        for(int i=0;i<width_*height_;i++){
-          zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
-        }
-      zone_map_pub_.publish(zone_map_resp);
-      //zone_meta_pub_.publish(meta_data_message);
-
-
-
-      /* grid 1d Array Data Visualization Purpose */
+      //meta_data_message = v_zone_map_resp_.front().map.info();
+      // for(auto& map_resp : v_zone_map_resp_)
+      //   for(int i=0;i<width_*height_;i++){
+      //     zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
+          
+      //   }
       // for(auto& map_resp : v_zone_map_resp_)
       //     for(int i=0;i<width_*height_;i++){
       //       zone_map_resp.map.data[i] = 100;
       //       usleep(50);
       //       zone_map_pub_.publish(zone_map_resp);
       //     }
+      // for(int i=0;i<10;i++)
+      // {
+      //   for(int j=0;j<5;j++)
+      //   {
+      //     if(width_*height_ > 1/resolution_ * (i + width_ * j)){
+      //       zone_map_resp.map.data[1/resolution_ * (i + width_ * j)] = 150;
+      //       usleep(50);
+      //       zone_map_pub_.publish(zone_map_resp);
+      //     }
+            
+      //   }
       // }
-      
+      //zone_meta_pub_.publish(meta_data_message);
       
       
     }
