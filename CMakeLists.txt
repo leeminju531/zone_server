@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   map_server
   roscpp
   rospy
+  tf2_ros
 )
 find_package(Bullet REQUIRED)
 find_package(SDL REQUIRED)
