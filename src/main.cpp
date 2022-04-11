@@ -122,14 +122,14 @@ private:
         transform1.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform1, ros::Time::now(), "map", "grid"));
 
-        tf::Transform transform2;
-        transform2.setOrigin( tf::Vector3(grid_arr_transform.getOrigin().getX(), grid_arr_transform.getOrigin().getY(), 0.0) );
-        transform2.setRotation(grid_arr_transform.getRotation());
-        br.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "grid", "arr"));
+        // tf::Transform transform2;
+        // transform2.setOrigin( tf::Vector3(grid_arr_transform.getOrigin().getX(), grid_arr_transform.getOrigin().getY(), 0.0) );
+        // transform2.setRotation(grid_arr_transform.getRotation());
+        // br.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "grid", "arr"));
 
 
-        tf::Transform res = grid_arr_transform.inverse() * map_grid_transform.inverse() * map_robot_transform;
-        res = map_grid_transform.inverse() * map_robot_transform;
+        //tf::Transform res = grid_arr_transform.inverse() * map_grid_transform.inverse() * map_robot_transform;
+        tf::Transform res = map_grid_transform.inverse() * map_robot_transform;
         tf::Vector3 p = res.getOrigin();
         double map_robot_x = map_robot_transform.getOrigin().getX();
         double map_robot_y = map_robot_transform.getOrigin().getY();
@@ -138,104 +138,24 @@ private:
         double x = p.getX();
         double y = p.getY();
 
-        std::cout <<"map_robot : "<<" ( " <<map_robot_x<<","<<map_robot_y<<")"<< std::endl;
-        std::cout <<"grid_robot : "<<" ( " <<grid_robot_x<<","<<grid_robot_y<<")"<< std::endl;
-        std::cout <<"arr_robot : "<<" ( " <<x<<","<<y<<")"<<  std::endl;
-
-        // std::cout <<"at grid map : "<<" ( " <<1/resolution_ * x<<","<<1/resolution_ * width_ * y<<")"<<  std::endl;
-        // std::cout <<" grid sum : "<<1/resolution_ * x + 1/resolution_ * width_ * y << std::endl;
-
-        // int a1 = 1/resolution_ * width_ * y;
-        // int x1 = 1/resolution_ * x;
-        // std::cout <<"at grid map2 : "<<" ( " <<x1<<","<<a1<<")"<<  std::endl;
-        // std::cout <<" grid sum : "<<x1+a1<< std::endl;
-        
-
-        //std::cout <<" v_zone_map_resp_ .size : " << v_zone_map_resp_.size()<< std::endl;
         bool pub_ = false;
-        int a = 1/resolution_ * (x + width_ * y);
-        cout << "pure idx : "<< 1/resolution_ * (x + width_ * y)<<std::endl;
-        cout << "idx : "<< a<<std::endl;
-        cout << "width * height : "<<width_*height_ << std::endl;
-        
-
-        // int idx = 1/resolution_ * (9 + width_ * 9);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // // usleep(1000);
-        //  idx = 1/resolution_ * (9 + width_ * 10);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // idx = 1/resolution_ * (9.5 + width_ * 9.5);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // // usleep(1000);
-        //  idx = 1/resolution_ * (10 + width_ * 9);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // // usleep(1000);
-        //  idx = 1/resolution_ * (10 + width_ * 10);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-
-        // idx = 1/resolution_ * (9.25123 + width_ * 9.24967);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-
-        // idx = 1/resolution_ * (9.38 + width_ * 9.911);
-        // v_zone_map_resp_[0].map.data[idx] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // x = 9.38;
-        // y = 9.911;
-        // std::cout <<"(9.38,9.911) at grid map : "<<" ( " <<1/resolution_ * x<<","<<1/resolution_ * width_ * y<<")"<<  std::endl;
-        // std::cout <<" grid sum : "<<1/resolution_ * x + 1/resolution_ * width_ * y << std::endl;
-
-        // int a1 = 1/resolution_ * width_ * y;
-        // a1 = a1 - a1%width_;
-        // int x1 = 1/resolution_ * x;
-        
-        // v_zone_map_resp_[0].map.data[a1+x1] = 120;
-        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
-        // std::cout <<"at grid map2 : "<<" ( " <<x1<<","<<a1<<")"<<  std::endl;
-        // std::cout <<" grid sum : "<<x1+a1<< std::endl;
-
+   
         for(int i=0;i<v_zone_map_resp_.size();i++)
         {
-          int idx = 1/resolution_ * (x + width_ * y); // scaling and transform to 1-D  
-          // if (idx >= 0 && idx < width_*height_ && v_zone_map_resp_[i].map.data[idx] > 0 ) // occupied area
-          // {
-          //   std_msgs::String msg;
-          //   msg.data = zone_topic_name_[i];
-          //   robot_zone_pub_.publish(msg);
-          //   pub_=true;
-          //   // std::cout <<" pubed " << std::endl;
-          //   break;
-          // }
-          int a1 = 1/resolution_ * width_ * y;
-          int x1 = 1/resolution_ * x;
+          // scaling and transform to 1-D  
+          int x_idx = 1/resolution_ * x;
+          int y_idx = 1/resolution_ * width_ * y;
+          y_idx = y_idx - y_idx%width_; // this is so crucial
+          int idx = x_idx + y_idx;
           if (idx >= 0 && idx < width_*height_ ) // occupied area
           {
-            //v_zone_map_resp_[i].map.data[idx];
-            std::cout << "resolution  : "<<resolution_ << std::endl;
-            std::cout << "zone_topic_name_["<<i<<"] : "<<zone_topic_name_[i] << std::endl;
-            std::cout << "v_zone_map_resp_["<<i<<"].map.data[idx] : "<<(int)v_zone_map_resp_[i].map.data[idx] <<std::endl;
-            std::cout << "v_zone_map_data_message["<<i<<"].data[idx] : "<<(int)v_zone_map_data_message[i].data[idx] <<std::endl;
-            if(v_zone_map_resp_[i].map.data[a1 - a1%width_+x1])
+            if(v_zone_map_resp_[i].map.data[idx])
             {
-              std::cout << "ddddddd in area : " << zone_topic_name_[i] << std::endl;
-              
               std_msgs::String msg;
               msg.data = zone_topic_name_[i];
               robot_zone_pub_.publish(msg);
               pub_=true;
             }
-            //v_zone_map_resp_[i].map.data[idx] = 120;
-            
-            
-            
-
-            // std::cout <<" pubed " << std::endl;
-            
           }
         }
         if(!pub_)
@@ -307,31 +227,22 @@ private:
     void combineMap(nav_msgs::MapMetaData& meta_data_message,nav_msgs::GetMap::Response& zone_map_resp,const std::vector<nav_msgs::GetMap::Response>& v_zone_map_resp_)
     {
       zone_map_resp = v_zone_map_resp_.front();
-      //meta_data_message = v_zone_map_resp_.front().map.info();
-      // for(auto& map_resp : v_zone_map_resp_)
-      //   for(int i=0;i<width_*height_;i++){
-      //     zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
-          
-      //   }
+      //meta_data_message = v_zone_map_resp_.front().map.info;
+      for(auto& map_resp : v_zone_map_resp_)
+        for(int i=0;i<width_*height_;i++)
+          zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
+      zone_map_pub_.publish(zone_map_resp.map);
+      //zone_meta_pub_.publish(meta_data_message);
+
+      /* for Visualization Purpose GridMap 1D Data Sequence*/
       // for(auto& map_resp : v_zone_map_resp_)
       //     for(int i=0;i<width_*height_;i++){
       //       zone_map_resp.map.data[i] = 100;
       //       usleep(50);
       //       zone_map_pub_.publish(zone_map_resp);
       //     }
-      // for(int i=0;i<10;i++)
-      // {
-      //   for(int j=0;j<5;j++)
-      //   {
-      //     if(width_*height_ > 1/resolution_ * (i + width_ * j)){
-      //       zone_map_resp.map.data[1/resolution_ * (i + width_ * j)] = 150;
-      //       usleep(50);
-      //       zone_map_pub_.publish(zone_map_resp);
-      //     }
-            
-      //   }
-      // }
-      //zone_meta_pub_.publish(meta_data_message);
+      
+      
       
       
     }
