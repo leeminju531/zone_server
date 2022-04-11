@@ -16,9 +16,23 @@
 #include <tf/tf.h>
 #include <tf2_ros/transform_listener.h>
 
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+
+#include <tf/LinearMath/Transform.h>
+
+
+#include <tf2/LinearMath/Transform.h>
+
+
 #include <string>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
+// #include <tf/transform.h>
+#include <tf/transform_broadcaster.h> //temp
+
+#include <unistd.h>// time 
 using namespace std;
 
 #ifdef HAVE_YAMLCPP_GT_0_5_0
@@ -30,15 +44,7 @@ void operator >> (const YAML::Node& node, T& i)
   i = node.as<T>();
 }
 #endif
-// enum Color {
-//   COLOR_A = 10,
-//   COLOR_B = 50,
-//   COLOR_C = 90,
-//   COLOR_D = 110,
-//   COLOR_E = 140,
-//   COLOR_F = 180,
-// };
-// int color[6] = {COLOR_A,COLOR_B,COLOR_C,COLOR_D,COLOR_E,COLOR_F}
+
 class RobotZoneServer{
 public:
     RobotZoneServer():
@@ -78,38 +84,136 @@ private:
       geometry_msgs::TransformStamped transformStamped;
       while(ros::ok())
       {
-        // try{
-        //   transformStamped = tfBuffer.lookupTransform(global_frame_id_, base_frame_id_, 
- 				// 									ros::Time(0),ros::Duration(0.1));
-        // }catch(tf2::TransformException &ex){
-        //   ROS_WARN("%s",ex.what());
-        //   continue;
-        // }
-        std::cout <<"1" << std::endl;
-        // ROS_INFO("Heard Map MetaData ! ");
-        for(int i=0;i<v_zone_map_resp_.size();i++)
-        {
-          double x=5,y=5; // arr 좌표 위 로봇의 좌표. 이를 구해야함.
-         
-          // if (v_zone_map_resp_[i].map.data[(int) 1/resolution_ * (x + width_ * y) ] > 0 ) // occupied area
-          {
-            std::cout <<"2" << std::endl;
-            std::cout <<"(int) 1/resolution_ * (x + width_ * y) : " << (int) 1/resolution_ * (x + width_ * y)<<std::endl;
-            v_zone_map_resp_[i].map.data[(int) 1/resolution_ * (x + width_ * y) ] = 120;
-            std::cout <<"3" << std::endl;
-            std::cout <<"v_zone_map_resp_.size : " << v_zone_map_resp_.size() << std::endl;
-            std::cout <<"v_zone_map_pub_.size :  " << v_zone_map_pub_.size() <<  std::endl;
-            v_zone_map_pub_[i].publish(v_zone_map_resp_[i].map);
-            std::cout <<"zone_topic_name_[i] :  " << zone_topic_name_[i] <<  std::endl;
-            std::cout <<"4" << std::endl;
-            // std_msgs::String msg;
-            // msg.data = zone_topic_name_[i];
-            // robot_zone_pub_.publish(msg);
-            break;
-          }
+        try{
+          transformStamped = tfBuffer.lookupTransform(global_frame_id_, base_frame_id_, 
+ 													ros::Time(0),ros::Duration(0.1));
+        }catch(tf2::TransformException &ex){
+          
+          ROS_WARN("%s",ex.what());
+          continue;
         }
         
         
+        tf::Transform map_robot_transform(tf::Quaternion (transformStamped.transform.rotation.x,
+                                  transformStamped.transform.rotation.y,transformStamped.transform.rotation.z,
+                                  transformStamped.transform.rotation.w),
+                                  tf::Vector3 (transformStamped.transform.translation.x,transformStamped.transform.translation.y,
+                                  transformStamped.transform.translation.z));
+        tf::Quaternion q; q.setRPY(origin_[2],0,0);
+        tf::Transform map_grid_transform(q, 
+                                  tf::Vector3 (origin_[0],origin_[1],0));
+        q.setRPY(3.14,0,0);
+        tf::Transform grid_arr_transform(q,
+                                  tf::Vector3 (0,resolution_*height_,0));
+        
+        static tf::TransformBroadcaster br;
+        tf::Transform transform1;
+        transform1.setOrigin( tf::Vector3(map_grid_transform.getOrigin().getX(), map_grid_transform.getOrigin().getY(), 0.0) );
+        //tf::Quaternion q;
+        q.setRPY(0, 0, origin_[2]);
+        transform1.setRotation(q);
+        br.sendTransform(tf::StampedTransform(transform1, ros::Time::now(), "map", "grid"));
+
+        tf::Transform transform2;
+        transform2.setOrigin( tf::Vector3(grid_arr_transform.getOrigin().getX(), grid_arr_transform.getOrigin().getY(), 0.0) );
+        transform2.setRotation(grid_arr_transform.getRotation());
+        br.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "grid", "arr"));
+
+
+        tf::Transform res = grid_arr_transform.inverse() * map_grid_transform.inverse() * map_robot_transform;
+        res = map_grid_transform.inverse() * map_robot_transform;
+        tf::Vector3 p = res.getOrigin();
+        double map_robot_x = map_robot_transform.getOrigin().getX();
+        double map_robot_y = map_robot_transform.getOrigin().getY();
+        double grid_robot_x = (map_grid_transform.inverse() * map_robot_transform).getOrigin().getX();
+        double grid_robot_y = (map_grid_transform.inverse() * map_robot_transform).getOrigin().getY();
+        double x = p.getX();
+        double y = p.getY();
+
+        std::cout <<"map_robot : "<<" ( " <<map_robot_x<<","<<map_robot_y<<")"<< std::endl;
+        std::cout <<"grid_robot : "<<" ( " <<grid_robot_x<<","<<grid_robot_y<<")"<< std::endl;
+        std::cout <<"arr_robot : "<<" ( " <<x<<","<<y<<")"<<  std::endl;
+
+        // std::cout <<"at grid map : "<<" ( " <<1/resolution_ * x<<","<<1/resolution_ * width_ * y<<")"<<  std::endl;
+        // std::cout <<" grid sum : "<<1/resolution_ * x + 1/resolution_ * width_ * y << std::endl;
+
+        // int a1 = 1/resolution_ * width_ * y;
+        // int x1 = 1/resolution_ * x;
+        // std::cout <<"at grid map2 : "<<" ( " <<x1<<","<<a1<<")"<<  std::endl;
+        // std::cout <<" grid sum : "<<x1+a1<< std::endl;
+        
+
+        //std::cout <<" v_zone_map_resp_ .size : " << v_zone_map_resp_.size()<< std::endl;
+        bool pub_ = false;
+        int a = 1/resolution_ * (x + width_ * y);
+        cout << "pure idx : "<< 1/resolution_ * (x + width_ * y)<<std::endl;
+        cout << "idx : "<< a<<std::endl;
+        cout << "width * height : "<<width_*height_ << std::endl;
+        
+
+        // int idx = 1/resolution_ * (9 + width_ * 9);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // // usleep(1000);
+        //  idx = 1/resolution_ * (9 + width_ * 10);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // idx = 1/resolution_ * (9.5 + width_ * 9.5);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // // usleep(1000);
+        //  idx = 1/resolution_ * (10 + width_ * 9);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // // usleep(1000);
+        //  idx = 1/resolution_ * (10 + width_ * 10);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+
+        // idx = 1/resolution_ * (9.25123 + width_ * 9.24967);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+
+        // idx = 1/resolution_ * (9.38 + width_ * 9.911);
+        // v_zone_map_resp_[0].map.data[idx] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // x = 9.38;
+        // y = 9.911;
+        // std::cout <<"(9.38,9.911) at grid map : "<<" ( " <<1/resolution_ * x<<","<<1/resolution_ * width_ * y<<")"<<  std::endl;
+        // std::cout <<" grid sum : "<<1/resolution_ * x + 1/resolution_ * width_ * y << std::endl;
+
+        // int a1 = 1/resolution_ * width_ * y;
+        // a1 = a1 - a1%width_;
+        // int x1 = 1/resolution_ * x;
+        
+        // v_zone_map_resp_[0].map.data[a1+x1] = 120;
+        // zone_map_pub_.publish(v_zone_map_resp_[0].map);
+        // std::cout <<"at grid map2 : "<<" ( " <<x1<<","<<a1<<")"<<  std::endl;
+        // std::cout <<" grid sum : "<<x1+a1<< std::endl;
+
+        for(int i=0;i<v_zone_map_resp_.size();i++)
+        {
+          // scaling and transform to 1-D  
+          // int idx = 1/resolution_ * (x + width_ * y); 
+          int x_idx = 1/resolution_ * x;
+          int y_idx = 1/resolution_ * width_ * y;
+          y_idx = y_idx % width_; // this's So Crucial !!!! 
+          int idx = x_idx + y_idx;
+          if (idx >= 0 && idx < width_*height_ && v_zone_map_resp_[i].map.data[idx]] > 0 ) // occupied area
+          {
+            std_msgs::String msg;
+            msg.data = zone_topic_name_[i];
+            robot_zone_pub_.publish(msg);
+            pub_=true;
+            break;
+          }
+        }
+        if(!pub_)
+        {
+          std_msgs::String msg;
+          msg.data = "None";
+          robot_zone_pub_.publish(msg);
+        }
         rate.sleep();
       }
         
@@ -133,6 +237,8 @@ private:
     std::vector<nav_msgs::MapMetaData> v_meta_data_message_;
     std::vector<ros::Publisher> v_zone_meta_pub_;
     std::vector<nav_msgs::GetMap::Response> v_zone_map_resp_;
+
+    std::vector<nav_msgs::OccupancyGrid> v_zone_map_data_message;
     std::vector<ros::Publisher> v_zone_map_pub_;
     
     
@@ -170,13 +276,26 @@ private:
     void combineMap(nav_msgs::MapMetaData& meta_data_message,nav_msgs::GetMap::Response& zone_map_resp,const std::vector<nav_msgs::GetMap::Response>& v_zone_map_resp_)
     {
       zone_map_resp = v_zone_map_resp_.front();
-      //meta_data_message = v_zone_map_resp_.front().map.info();
+      meta_data_message = v_zone_map_resp_.front().map.info();
       for(auto& map_resp : v_zone_map_resp_)
-        for(int i=0;i<width_*height_;i++)
+        for(int i=0;i<width_*height_;i++){
           zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
-      
-      //zone_meta_pub_.publish(meta_data_message);
+        }
       zone_map_pub_.publish(zone_map_resp);
+      //zone_meta_pub_.publish(meta_data_message);
+
+
+
+      /* grid 1d Array Data Visualization Purpose */
+      // for(auto& map_resp : v_zone_map_resp_)
+      //     for(int i=0;i<width_*height_;i++){
+      //       zone_map_resp.map.data[i] = 100;
+      //       usleep(50);
+      //       zone_map_pub_.publish(zone_map_resp);
+      //     }
+      // }
+      
+      
       
     }
 
@@ -269,6 +388,7 @@ private:
         //   map_resp_.map.data[i] = 99;
         else // occupied
           map_resp_.map.data[i] = 99;
+
       }
 
 
@@ -279,7 +399,7 @@ private:
       }
       v_meta_data_message_.emplace_back(meta_data_message_);
       v_zone_map_resp_.emplace_back(map_resp_);
-
+      v_zone_map_data_message.emplace_back(map_resp_.map);
 
       return true;
     }
