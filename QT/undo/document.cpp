@@ -143,7 +143,7 @@ Document::Document(QWidget *parent)
     setBackgroundRole(QPalette::Base);
 
     QPalette pal = palette();
-    pal.setBrush(QPalette::Base, QPixmap(":/icons/background.png"));
+    pal.setBrush(QPalette::Base, QPixmap(":/icons/map.pgm"));
     pal.setColor(QPalette::HighlightedText, Qt::red);
     setPalette(pal);
 }
