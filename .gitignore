@@ -1,0 +1,16 @@
+.vscode/settings.json
+QT/undo/.qmake.stash
+QT/undo/commands.o
+QT/undo/document.o
+QT/undo/main.o
+QT/undo/mainwindow.o
+QT/undo/Makefile
+QT/undo/moc_document.cpp
+QT/undo/moc_document.o
+QT/undo/moc_mainwindow.cpp
+QT/undo/moc_mainwindow.o
+QT/undo/moc_predefs.h
+QT/undo/qrc_undo.cpp
+QT/undo/qrc_undo.o
+QT/undo/ui_mainwindow.h
+QT/undo/undo
