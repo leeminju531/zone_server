@@ -58,7 +58,7 @@
 #include "document.h"
 #include "mainwindow.h"
 #include "commands.h"
-
+#include <iostream>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -84,7 +84,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(actionAddSnowman, SIGNAL(triggered()), this, SLOT(addSnowman()));
     connect(actionAbout, SIGNAL(triggered()), this, SLOT(about()));
     connect(actionAboutQt, SIGNAL(triggered()), this, SLOT(aboutQt()));
-
+    connect(actionExportPgms, SIGNAL(triggered()), this, SLOT(savePgms()));
+    
     connect(undoLimit, SIGNAL(valueChanged(int)), this, SLOT(updateActions()));
     connect(documentTabs, SIGNAL(currentChanged(int)), this, SLOT(updateActions()));
 
@@ -377,6 +378,10 @@ void MainWindow::removeShape()
         return;
 
     doc->undoStack()->push(new RemoveShapeCommand(doc, shapeName));
+}
+void MainWindow::savePgms()
+{
+    std::cout << "dddd save "<<std::endl;
 }
 
 void MainWindow::setShapeColor()

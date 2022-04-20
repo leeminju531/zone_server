@@ -17,5 +17,6 @@
         <file>icons/triangle.png</file>
         <file>icons/undo.png</file>
         <file>icons/map.pgm</file>
+        <file>icons/export_to_pgms.png</file>
     </qresource>
 </RCC>

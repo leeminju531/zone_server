@@ -77,6 +77,7 @@ public slots:
     void addShape();
     void removeShape();
     void setShapeColor();
+    void savePgms();
 
     void addSnowman();
     void addRobot();
