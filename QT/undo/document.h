@@ -120,7 +120,7 @@ private:
     int indexOf(const QString &shapeName) const;
     int indexAt(const QPoint &pos) const;
     QString uniqueName(const QString &name) const;
-
+    void resizeEvent(QResizeEvent *);
     QList<Shape> m_shapeList;
     int m_currentIndex;
     int m_mousePressIndex;
@@ -129,6 +129,8 @@ private:
     QString m_fileName;
 
     QUndoStack *m_undoStack;
+    QPixmap bg_qp_; // background Qpixmap
+    QSize cv_size_; // store converted size for calculate transformation 
 };
 
 #endif // DOCUMENT_H

@@ -143,11 +143,18 @@ Document::Document(QWidget *parent)
     setBackgroundRole(QPalette::Base);
 
     QPalette pal = palette();
-    pal.setBrush(QPalette::Base, QPixmap(":/icons/map.pgm"));
+    bg_qp_ = QPixmap(":/icons/map.pgm");
+    pal.setBrush(QPalette::Base, bg_qp_);
     pal.setColor(QPalette::HighlightedText, Qt::red);
     setPalette(pal);
 }
-
+void Document::resizeEvent(QResizeEvent *)
+{
+    QPalette pal = palette();
+    cv_size_ = size();
+    pal.setBrush(QPalette::Base, bg_qp_.scaled(size()));
+    setPalette(pal);
+}
 QString Document::addShape(const Shape &shape)
 {
     QString name = Shape::typeToString(shape.type());
