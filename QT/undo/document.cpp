@@ -54,6 +54,7 @@
 #include <QUndoStack>
 #include "document.h"
 #include "commands.h"
+#include <iostream>
 
 static const int resizeHandleWidth = 6;
 
@@ -109,7 +110,6 @@ QString Shape::typeToString(Type type)
             result = QLatin1String("Triangle");
             break;
     }
-
     return result;
 }
 
@@ -158,7 +158,7 @@ void Document::resizeEvent(QResizeEvent *)
 QString Document::addShape(const Shape &shape)
 {
     QString name = Shape::typeToString(shape.type());
-    name = uniqueName(name);
+    name = uniqueName(QString::fromStdString("zone"));
 
     m_shapeList.append(shape);
     m_shapeList[m_shapeList.count() - 1].m_name = name;
@@ -448,7 +448,7 @@ QString Document::uniqueName(const QString &name) const
         if (indexOf(unique) == -1)
             break;
     }
-
+    
     return unique;
 }
 
