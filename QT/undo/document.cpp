@@ -144,6 +144,7 @@ Document::Document(QWidget *parent)
 
     QPalette pal = palette();
     bg_qp_ = QPixmap(":/icons/map.pgm");
+    origin_size_ = bg_qp_.size();
     pal.setBrush(QPalette::Base, bg_qp_);
     pal.setColor(QPalette::HighlightedText, Qt::red);
     setPalette(pal);
@@ -407,6 +408,7 @@ void Document::paintEvent(QPaintEvent *event)
         if (shape.type() == Shape::Triangle)
             rect.adjust(0, rect.height()/2, 0, 0);
         painter.drawText(rect, Qt::AlignCenter, shape.name());
+
     }
 }
 

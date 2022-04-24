@@ -105,6 +105,10 @@ public:
     void setFileName(const QString &fileName);
 
     QUndoStack *undoStack() const;
+    QSize getCurQSize(){return cv_size_;};
+    QSize getOriginQSize(){return origin_size_;};
+    QList<Shape>* getShapeList(){return &m_shapeList; };
+    
 
 signals:
     void currentShapeChanged(const QString &shapeName);
@@ -131,6 +135,7 @@ private:
     QUndoStack *m_undoStack;
     QPixmap bg_qp_; // background Qpixmap
     QSize cv_size_; // store converted size for calculate transformation 
+    QSize origin_size_; // background origin size
 };
 
 #endif // DOCUMENT_H
