@@ -59,6 +59,9 @@
 #include "mainwindow.h"
 #include "commands.h"
 #include <iostream>
+
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -381,8 +384,84 @@ void MainWindow::removeShape()
 }
 void MainWindow::savePgms()
 {
-    std::cout << "dddd save "<<std::endl;
+    Document *doc = currentDocument();
+
+    //QPainter painter(this);
+
+    QPixmap cur_qp((*doc).getCurQSize()); // widget size 만큼 qp
+    QPixmap origin_qp((*doc).getOriginQSize());
+
+    unsigned char *d;
+    d = (unsigned char *)malloc(sizeof(unsigned char)*origin_qp.width()*origin_qp.height());
+    for(Shape shape : *((*doc).getShapeList()) )
+    {
+        QRect r = shape.rect();
+        int rect_x,rect_y,rect_w,rect_h;
+        float ratio_x = ((float)origin_qp.width()) / ((float)cur_qp.width()); 
+        float ratio_y = ((float)origin_qp.height()) / ((float)cur_qp.height());
+        rect_x=r.x()*ratio_x;rect_y=r.y()*ratio_y;
+        rect_w=r.width()*ratio_x;rect_h=r.height()*ratio_y;
+
+        int w = origin_qp.width();
+        int h = origin_qp.height();
+        
+        switch(shape.type())
+        {
+            case Shape::Rectangle:
+                for(int i=0;i<w*h;i++)
+                {
+                    int y = i/w;
+                    int x = i%w;
+                    if(x>rect_x && x<rect_x+rect_w && y>rect_y && y<rect_y+rect_h)  d[i] = 254; 
+                    else    d[i]=1; // initialize
+                }
+                break;
+            case Shape::Circle:
+                for(int i=0;i<w*h;i++)
+                {
+                    int y = i/w;
+                    int x = i%w;
+                    if( rect_h*rect_h*(2*x-2*rect_x-rect_w)*(2*x-2*rect_x-rect_w) + rect_w*rect_w*(2*y-2*rect_y-rect_h)*(2*y-2*rect_y-rect_h) < rect_w*rect_w*rect_h*rect_h ) d[i] = 254; 
+                    else    d[i]=1;
+                }
+                break;
+            case Shape::Triangle:
+                for(int i=0;i<w*h;i++)
+                {
+                    int y = i/w;
+                    int x = i%w;
+                    if(y < rect_y + rect_h && -2*rect_h*(x-rect_x-rect_w/2)+rect_w*(rect_y-y) < 0 && 2*rect_h*(x-rect_x-rect_w/2)+rect_w*(rect_y-y) < 0)   d[i] = 254; 
+                    else    d[i]=1;
+                }
+                break;
+
+        }
+        
+        write_pgm(( "../zone_pgm_folder/"+ shape.name().toStdString()+".pgm").c_str(),d,origin_qp.width(),origin_qp.height());
+        
+    }
+    free(d);
+
+
 }
+void MainWindow::write_pgm(const char *filename, unsigned char *data, int w, int h)
+{           
+    FILE *out_file;
+    assert(w > 0);
+    assert(h > 0);
+
+    out_file = fopen(filename, "wb");
+    if (!out_file) {
+        fprintf(stderr, "Fail to open file: %s\n", filename);
+        return;
+    }
+
+    fprintf(out_file, "P5\n");
+    fprintf(out_file, "%d %d\n255\n", w, h);
+    fwrite(data, sizeof(unsigned char), w * h, out_file);
+    fclose(out_file);
+    std::cout <<"ok"<<std::endl;
+} 
 
 void MainWindow::setShapeColor()
 {

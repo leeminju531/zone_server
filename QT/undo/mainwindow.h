@@ -90,7 +90,7 @@ private slots:
 
 private:
     QUndoGroup *m_undoGroup;
-
+    void write_pgm(const char *filename, unsigned char *data, int w, int h);
     QString fixedWindowTitle(const Document *doc) const;
 };
 

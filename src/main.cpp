@@ -149,7 +149,7 @@ private:
           int idx = x_idx + y_idx;
           if (idx >= 0 && idx < width_*height_ ) // occupied area
           {
-            if(v_zone_map_resp_[i].map.data[idx])
+            if(!v_zone_map_resp_[i].map.data[idx])
             {
               std_msgs::String msg;
               msg.data = zone_topic_name_[i];
@@ -330,12 +330,12 @@ private:
 
       // for visualization, specify value 
       for(int i=0;i<width_*height_;i++){
-        if(map_resp_.map.data[i] == -1) // unknown
-          map_resp_.map.data[i] = 0;
+        if(map_resp_.map.data[i] == 100) // In Shape
+          map_resp_.map.data[i] = 99;
         // else if(map_resp_.map.data[i] == 0) // free 
         //   map_resp_.map.data[i] = 99;
         else // occupied
-          map_resp_.map.data[i] = 99;
+          map_resp_.map.data[i] = 0;
 
       }
 
