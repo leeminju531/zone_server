@@ -44,15 +44,18 @@ void operator >> (const YAML::Node& node, T& i)
   i = node.as<T>();
 }
 #endif
-// enum Color {
-//   COLOR_A = 10,
-//   COLOR_B = 50,
-//   COLOR_C = 90,
-//   COLOR_D = 110,
-//   COLOR_E = 140,
-//   COLOR_F = 180,
-// };
-// int color[6] = {COLOR_A,COLOR_B,COLOR_C,COLOR_D,COLOR_E,COLOR_F}
+
+
+enum Color {
+  COLOR_A = 10,
+  COLOR_B = 30,
+  COLOR_C = 50,
+  COLOR_D = 70,
+  COLOR_E = 90,
+  COLOR_F = 110,
+};
+unsigned char color[6] = {COLOR_A,COLOR_B,COLOR_C,COLOR_D,COLOR_E,COLOR_F};
+
 class RobotZoneServer{
 public:
     RobotZoneServer():
@@ -149,7 +152,7 @@ private:
           int idx = x_idx + y_idx;
           if (idx >= 0 && idx < width_*height_ ) // occupied area
           {
-            if(!v_zone_map_resp_[i].map.data[idx])
+            if(v_zone_map_resp_[i].map.data[idx])
             {
               std_msgs::String msg;
               msg.data = zone_topic_name_[i];
@@ -229,8 +232,15 @@ private:
       zone_map_resp = v_zone_map_resp_.front();
       //meta_data_message = v_zone_map_resp_.front().map.info;
       for(auto& map_resp : v_zone_map_resp_)
+      {
+        
         for(int i=0;i<width_*height_;i++)
-          zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i]; 
+        {
+          zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? zone_map_resp.map.data[i] : map_resp.map.data[i];
+        }
+          // zone_map_resp.map.data[i] = zone_map_resp.map.data[i] > 0 ? 120 : 0; 
+      }
+        
       zone_map_pub_.publish(zone_map_resp.map);
       //zone_meta_pub_.publish(meta_data_message);
 
@@ -290,14 +300,14 @@ private:
           v_zone_map_pub_.emplace_back(nh_.advertise<nav_msgs::OccupancyGrid>(zone_topic_name_[i],1,true));
           v_zone_meta_pub_.emplace_back(nh_.advertise<nav_msgs::MapMetaData>(zone_topic_name_[i]+"_metadata",1,true));
         }
-        if(!loadMapFromValues(zone_img_path_[i],resolution_,origin_))
+        if(!loadMapFromValues(zone_img_path_[i],resolution_,origin_,color[i%5]))
         {
           exit(-1);
         }
       }
 
     }
-    bool loadMapFromValues(std::string map_file_name,double resolution,double origin[3])
+    bool loadMapFromValues(std::string map_file_name,double resolution,double origin[3],unsigned char colorVal)
     {
       int negate = 0;
       double occ_th = 0.65;
@@ -328,14 +338,14 @@ private:
               map_resp_.map.info.resolution);
       
 
+      // empty area -> 100
+      // shape area -> 0
       // for visualization, specify value 
       for(int i=0;i<width_*height_;i++){
-        if(map_resp_.map.data[i] == 100) // In Shape
-          map_resp_.map.data[i] = 99;
-        // else if(map_resp_.map.data[i] == 0) // free 
-        //   map_resp_.map.data[i] = 99;
-        else // occupied
+        if(map_resp_.map.data[i] > 0 ) // empty area parsing to zero data
           map_resp_.map.data[i] = 0;
+        else 
+          map_resp_.map.data[i] = colorVal;
 
       }
 
