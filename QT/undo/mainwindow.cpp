@@ -434,12 +434,11 @@ void MainWindow::savePgms()
                     else    d[i]=1;
                 }
                 break;
-
         }
-        
         write_pgm(( "../zone_pgm_folder/"+ shape.name().toStdString()+".pgm").c_str(),d,origin_qp.width(),origin_qp.height());
         
     }
+    
     free(d);
 
 
@@ -460,7 +459,7 @@ void MainWindow::write_pgm(const char *filename, unsigned char *data, int w, int
     fprintf(out_file, "%d %d\n255\n", w, h);
     fwrite(data, sizeof(unsigned char), w * h, out_file);
     fclose(out_file);
-    std::cout <<"ok"<<std::endl;
+    std::cout <<"Successfully Wrote "<<filename<<std::endl;
 } 
 
 void MainWindow::setShapeColor()
