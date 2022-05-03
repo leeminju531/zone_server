@@ -2,7 +2,7 @@
 >ROS Occupancy Map Zone Notification for flexible navigation parameter tunning 
 
 ## Package Summary
->One of the most flexible aspect about ROS navigation is dynamic reconfiguration, since different parameter setup might be more helpful for certain situations. nevertheless, it makes a robot unnatural movement and looks like unsuitable what perform dynamic reconfiguration at high level task like decision-making process. this package,user generative zone notification, helps dynamic tunning as middle task 
+>One of the most flexible aspect about ROS navigation is dynamic reconfiguration, since different parameter setup might be more helpful for certain situations. nevertheless, it makes a robot unnatural movement and looks like conceptually unsuitable what perform dynamic reconfiguration about known map at high level task like decision-making process. this package,user generative zone notification, helps dynamic tunning as middle task 
 
 
 ## youtube
