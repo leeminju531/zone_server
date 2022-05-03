@@ -276,9 +276,12 @@ private:
       v_zone_map_resp_.clear();
       for(auto const& dir_entry : boost::filesystem::directory_iterator{mapfpath})
       {
-        zone_img_path_.emplace_back(dir_entry.path().string());
+        if(!isHidden(dir_entry.path().string()))
+          zone_img_path_.emplace_back(dir_entry.path().string());
+          
       }
-        
+      if(zone_img_path_.size() == 0)
+        std::cout << "reading zone folder size is 0 " << std::endl;
       for(const std::string& img_path : zone_img_path_) // extract topic name by each pgm files. ex) '~~~/zoneFolder/{name}.pgm' -> {name}
       {
         size_t s,e;
@@ -306,6 +309,23 @@ private:
         }
       }
 
+    }
+    bool isHidden(const std::string& path)
+    {
+      size_t s,e;
+        s=e=0;
+        for(int i=path.size()-1;i>=0;i--)
+        {
+          if(path[i] == '.')  e = i;
+          else if(path[i] == '/')  s = i;
+          if(s>0 && e>0)  break;
+        }
+        std::cout << "path.substr(s+1,e-s-1) : "<<path.substr(s+1,e-s-1)<<std::endl;
+        if(path.substr(s+1,e-s-1) == "") // hidden file
+          return true;
+        else 
+          return false;
+          
     }
     bool loadMapFromValues(std::string map_file_name,double resolution,double origin[3],unsigned char colorVal)
     {
