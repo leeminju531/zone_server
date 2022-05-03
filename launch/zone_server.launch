@@ -1,0 +1,14 @@
+<launch>
+    <arg name="zone_path" default="$(find zone_server)/QT/zone_pgm_folder" />
+    <arg name="map_metadata" default="map_metadata" />
+    <arg name="global_frame_id" default="map" />
+    <arg name="base_frame_id" default="base_footprint" />
+
+    <node name="zone_server" pkg="zone_server" type="zone_server" output="screen">
+        <param name="zone_folder_path" value="$(arg zone_path)" />
+        <param name="map_metadata" value="$(arg map_metadata)" />
+        <param name="global_frame_id" value="$(arg global_frame_id)" />
+        <param name="base_frame_id" value="$(arg base_frame_id)" />
+    </node>
+
+</launch>
