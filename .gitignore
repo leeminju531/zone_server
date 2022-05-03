@@ -12,5 +12,4 @@ QT/undo/moc_mainwindow.o
 QT/undo/moc_predefs.h
 QT/undo/qrc_undo.cpp
 QT/undo/qrc_undo.o
-QT/undo/ui_mainwindow.h
 QT/undo/undo
