@@ -46,7 +46,7 @@ cd $(find zone_server)/QT/undo
   >latched topic
     
   ***~robot_zone (std_msgs/String)***       
-  >publish robot zone. each publishing name equal to read pgm file name
+  >publish robot zone. each publishing name equal to pgm file name
 ---
 ### Parameters
 
