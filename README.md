@@ -1,6 +1,6 @@
 # zone_server
-[학부졸업논문_이민주.pdf](https://github.com/leeminju531/zone_server/files/8984623/_.pdf)
 
+[학부졸업논문_이민주.pdf](https://github.com/leeminju531/zone_server/files/8996104/_.pdf)
 
 
 ## youtube
